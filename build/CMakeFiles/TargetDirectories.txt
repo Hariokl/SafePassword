@@ -1,0 +1,3 @@
+C:/Users/Всеволод/Desktop/Projects/NoteBook/build/CMakeFiles/NoteBook.dir
+C:/Users/Всеволод/Desktop/Projects/NoteBook/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/Всеволод/Desktop/Projects/NoteBook/build/CMakeFiles/ZERO_CHECK.dir

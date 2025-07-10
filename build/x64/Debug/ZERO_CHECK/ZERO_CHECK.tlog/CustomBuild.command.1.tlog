@@ -1,0 +1,10 @@
+^C:\USERS\ВСЕВОЛОД\DESKTOP\PROJECTS\NOTEBOOK\BUILD\CMAKEFILES\A3D719F7E9DE2A7991C67F62EE96227A\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Всеволод/Desktop/Projects/NoteBook -BC:/Users/Всеволод/Desktop/Projects/NoteBook/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/Всеволод/Desktop/Projects/NoteBook/build/NoteBook.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
