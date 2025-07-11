@@ -14,3 +14,5 @@ CURRENT PROGRESS: working on app 1
 CURRENT VERSION: to find version of an app, go to: "/build/Debug" and download all of it's contents for it's work
 
 SOURCE CODE: is located in "/src", currently all code is in one file "main.cpp", later on it may change
+
+WARNING: this project's fundamentals are built using AI chat, so if you have some improvements you want to be implemented, it may take a while to make, but please, if you have a suggestion (or you think that something can make this project better), just say it or comment it, so I can hear you, because I may just not think of it, or forget about it. So Please, I will hear you out if you have a suggestion, and I will try to reply.
