@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 project(NoteBook)
-git remote add origin https://github.com/username/repository.git
 set(CMAKE_CXX_STANDARD 17)
 
 # SDL2
