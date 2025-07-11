@@ -10,3 +10,7 @@ You can use only app 1, as its function is intuitive designed organiser for your
 {For example, I may have simple password for github "harioklGithub" (which will be stored in app 1), but when processed through app 2 it will look like: "JiraA4kGl)rfV" (this password will be used for github account}
 
 CURRENT PROGRESS: working on app 1
+
+CURRENT VERSION: to find version of an app, go to: "/build/Debug" and download all of it's contents for it's work
+
+SOURCE CODE: is located in "/src", currently all code is in one file "main.cpp", later on it may change
