@@ -182,9 +182,9 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
 
             std::string displayText = textToRender;
             // For password field (index 2), mask text with '*'
-            if (i == 2 && !inputs[i].empty()) {
-                displayText = std::string(inputs[i].size(), '*');
-            }
+            // if (i == 1 && !inputs[i].empty()) {
+            //     displayText = std::string(inputs[i].size(), '*');
+            // }
 
             SDL_Surface* textSurf = TTF_RenderText_Blended(font, displayText.c_str(), colorToUse);
             SDL_Texture* textTex = SDL_CreateTextureFromSurface(renderer, textSurf);
