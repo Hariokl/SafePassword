@@ -13,5 +13,9 @@ link_directories(${CMAKE_SOURCE_DIR}/libs/SDL2_ttf/lib/x64)
 # Add your executable
 add_executable(NoteBook src/main.cpp)
 
+
 # Link libraries
 target_link_libraries(NoteBook SDL2 SDL2main SDL2_ttf)
+
+# Removes console
+set_target_properties(NoteBook PROPERTIES WIN32_EXECUTABLE TRUE)

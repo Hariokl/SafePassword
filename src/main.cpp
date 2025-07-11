@@ -1,9 +1,8 @@
-
+//TODO: make a search bar for services/accounts (*)
 //TODO: unite getServiceNameInput and getMultipleTextInput into one function (also structures MultiInputResult and ServiceInputResult unite into one structure)
-//TODO: make it so, when exiting ( entering ) an app, it will load information from ( into ) app into ( from ) separate save file
 //TODO: make it, so all buttons, heights, widths and placement is connected to WIDTH and HEIGHT of the window (there should be relativity everywhere to WIDTH and HEIGHT)
-//TODO: make a search bar for services/accounts
-//TODO: hide console when the app runs, as I don't need it
+//TODO: make this more universal code by adding specified int and char types like int8
+//TODO: make this available for linux (?)
 //TODO: make a better visuals altogether :D
 
 #include <SDL.h>
@@ -11,10 +10,16 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <unordered_map>
+#include <windows.h>
+
 
 const int WINDOW_WIDTH = 400;
 const int WINDOW_HEIGHT = 700;
 const int MAX_CHARACTERS = 20;
+const char PATH_SAVE[9] = "save.txt";
 
 struct Account {
     std::string accountName;
@@ -216,6 +221,104 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
     }
 }
 
+bool showDeleteConfirmation(SDL_Renderer* renderer, TTF_Font* font, const std::string& message) {
+    bool confirmed = false;
+    bool waiting = true;
+
+    SDL_Rect popupRect = { WINDOW_WIDTH / 2 - 150, WINDOW_HEIGHT / 2 - 75, 300, 150 };
+    SDL_Rect yesBtn = { popupRect.x + 30, popupRect.y + 90, 100, 40 };
+    SDL_Rect noBtn = { popupRect.x + 170, popupRect.y + 90, 100, 40 };
+
+    SDL_Color white = { 255, 255, 255, 255 };
+    SDL_Color bgColor = { 40, 40, 40, 255 };
+
+    SDL_Event e;
+    while (waiting) {
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE)) {
+                waiting = false;
+            }
+            else if (e.type == SDL_MOUSEBUTTONDOWN) {
+                int mx = e.button.x;
+                int my = e.button.y;
+
+                if (mx >= yesBtn.x && mx <= yesBtn.x + yesBtn.w &&
+                    my >= yesBtn.y && my <= yesBtn.y + yesBtn.h) {
+                    confirmed = true;
+                    waiting = false;
+                }
+
+                if (mx >= noBtn.x && mx <= noBtn.x + noBtn.w &&
+                    my >= noBtn.y && my <= noBtn.y + noBtn.h) {
+                    confirmed = false;
+                    waiting = false;
+                }
+            }
+        }
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
+        SDL_RenderFillRect(renderer, nullptr);
+
+        SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, 255);
+        SDL_RenderFillRect(renderer, &popupRect);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &popupRect);
+
+        SDL_Surface* msgSurf = TTF_RenderText_Blended_Wrapped(font, message.c_str(), white, popupRect.w - 20);
+        SDL_Texture* msgTex = SDL_CreateTextureFromSurface(renderer, msgSurf);
+        SDL_Rect msgRect = {
+            popupRect.x + (popupRect.w - msgSurf->w) / 2,
+            popupRect.y + 20,
+            msgSurf->w,
+            msgSurf->h
+        };
+        SDL_RenderCopy(renderer, msgTex, nullptr, &msgRect);
+        SDL_FreeSurface(msgSurf);
+        SDL_DestroyTexture(msgTex);
+
+        // Yes Button
+        SDL_SetRenderDrawColor(renderer, 34, 139, 34, 255);
+        SDL_RenderFillRect(renderer, &yesBtn);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &yesBtn);
+
+        SDL_Surface* yesSurf = TTF_RenderText_Blended(font, "Yes", white);
+        SDL_Texture* yesTex = SDL_CreateTextureFromSurface(renderer, yesSurf);
+        SDL_Rect yesRect = {
+            yesBtn.x + (yesBtn.w - yesSurf->w) / 2,
+            yesBtn.y + (yesBtn.h - yesSurf->h) / 2,
+            yesSurf->w,
+            yesSurf->h
+        };
+        SDL_RenderCopy(renderer, yesTex, nullptr, &yesRect);
+        SDL_FreeSurface(yesSurf);
+        SDL_DestroyTexture(yesTex);
+
+        // No Button
+        SDL_SetRenderDrawColor(renderer, 200, 50, 50, 255);
+        SDL_RenderFillRect(renderer, &noBtn);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &noBtn);
+
+        SDL_Surface* noSurf = TTF_RenderText_Blended(font, "No", white);
+        SDL_Texture* noTex = SDL_CreateTextureFromSurface(renderer, noSurf);
+        SDL_Rect noRect = {
+            noBtn.x + (noBtn.w - noSurf->w) / 2,
+            noBtn.y + (noBtn.h - noSurf->h) / 2,
+            noSurf->w,
+            noSurf->h
+        };
+        SDL_RenderCopy(renderer, noTex, nullptr, &noRect);
+        SDL_FreeSurface(noSurf);
+        SDL_DestroyTexture(noTex);
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+    }
+
+    return confirmed;
+}
+
 bool showServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& service) {
     bool done = false;
     int scrollOffset = 0;
@@ -269,7 +372,10 @@ bool showServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& se
 
                         if (mx >= deleteBtn.x && mx <= deleteBtn.x + deleteBtn.w &&
                             my >= deleteBtn.y && my <= deleteBtn.y + deleteBtn.h) {
-                            service.accounts.erase(service.accounts.begin() + i);
+                            if (showDeleteConfirmation(renderer, font, "Are you sure you want to delete this account?")) {
+                                service.accounts.erase(service.accounts.begin() + i);
+                            }
+
                             break;
                         }
 
@@ -283,8 +389,10 @@ bool showServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& se
                 } else {
                     if (mx >= deleteServiceBtn.x && mx <= deleteServiceBtn.x + deleteServiceBtn.w &&
                         my >= deleteServiceBtn.y && my <= deleteServiceBtn.y + deleteServiceBtn.h) {
-                        deleteService = true;
-                        done = true;
+                        if (showDeleteConfirmation(renderer, font, "Are you sure you want to delete this service?")) {
+                            deleteService = true;
+                            done = true;
+                        }
                     }
                 }
             }
@@ -415,8 +523,63 @@ bool showServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& se
     return deleteService;
 }
 
+void saveToFile(const std::vector<Service>& services, const std::string& filename) {
+    std::ofstream outFile(filename);
+    if (!outFile) {
+        std::cerr << "Failed to open file for writing: " << filename << std::endl;
+        return;
+    }
 
-int main(int argc, char* argv[]) {
+    for (const auto& service : services) {
+        for (const auto& account : service.accounts) {
+            outFile << service.label << ";" << account.accountName << ";" << account.password << "\n";
+        }
+        if (service.accounts.size() == 0) {
+            outFile << service.label << ";;";
+        }
+    }
+
+    outFile.close();
+}
+
+void loadFromFile(std::vector<Service>& services, const std::string& filename) {
+    std::ifstream inFile(filename);
+    if (!inFile) {
+        std::cerr << "No existing file to load: " << filename << std::endl;
+        return;
+    }
+
+    std::unordered_map<std::string, Service*> serviceMap;
+    std::string line;
+
+    while (std::getline(inFile, line)) {
+        std::stringstream ss(line);
+        std::string serviceName, accountName, password;
+
+        if (std::getline(ss, serviceName, ';') &&
+            std::getline(ss, accountName, ';') &&
+            std::getline(ss, password)) {
+
+            if (serviceMap.find(serviceName) == serviceMap.end()) {
+                services.emplace_back(Service{serviceName});
+                serviceMap[serviceName] = &services.back();
+            }
+
+            serviceMap[serviceName]->accounts.push_back({accountName, password});
+        } else if (serviceName.size() != 0) {
+            if (serviceMap.find(serviceName) == serviceMap.end()) {
+                services.emplace_back(Service{serviceName});
+                serviceMap[serviceName] = &services.back();
+            }
+        }
+    }
+
+    inFile.close();
+}
+
+// used to be main(), but since I decided to use windows.h to remove console, so it needed to be changed
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
+{
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
 
@@ -430,8 +593,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::vector<Service> services;
-    int scrollOffset = 0;
-    size_t lastServiceI = 0;
+    loadFromFile(services, PATH_SAVE);
 
     auto addService = [&]() {
         ServiceInputResult result = getServiceNameInput(renderer, font);
@@ -442,13 +604,13 @@ int main(int argc, char* argv[]) {
         }
     };
 
-
-
-
     Service* selectedService = nullptr;
 
+    int scrollOffset = 0;
+    size_t lastServiceI = 0;
     bool running = true;
     SDL_Event event;
+
 
     while (running) {
         while (SDL_PollEvent(&event)) {
@@ -568,5 +730,7 @@ int main(int argc, char* argv[]) {
     SDL_DestroyWindow(window);
     TTF_Quit();
     SDL_Quit();
+
+    saveToFile(services, PATH_SAVE);
     return 0;
 }
