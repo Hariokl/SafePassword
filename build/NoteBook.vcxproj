@@ -125,7 +125,7 @@
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImportLibrary>C:/Users/Всеволод/Desktop/Projects/NoteBook/build/Debug/NoteBook.lib</ImportLibrary>
       <ProgramDataBaseFile>C:/Users/Всеволод/Desktop/Projects/NoteBook/build/Debug/NoteBook.pdb</ProgramDataBaseFile>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -173,7 +173,7 @@
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImportLibrary>C:/Users/Всеволод/Desktop/Projects/NoteBook/build/Release/NoteBook.lib</ImportLibrary>
       <ProgramDataBaseFile>C:/Users/Всеволод/Desktop/Projects/NoteBook/build/Release/NoteBook.pdb</ProgramDataBaseFile>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -221,7 +221,7 @@
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImportLibrary>C:/Users/Всеволод/Desktop/Projects/NoteBook/build/MinSizeRel/NoteBook.lib</ImportLibrary>
       <ProgramDataBaseFile>C:/Users/Всеволод/Desktop/Projects/NoteBook/build/MinSizeRel/NoteBook.pdb</ProgramDataBaseFile>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -268,7 +268,7 @@
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImportLibrary>C:/Users/Всеволод/Desktop/Projects/NoteBook/build/RelWithDebInfo/NoteBook.lib</ImportLibrary>
       <ProgramDataBaseFile>C:/Users/Всеволод/Desktop/Projects/NoteBook/build/RelWithDebInfo/NoteBook.pdb</ProgramDataBaseFile>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
