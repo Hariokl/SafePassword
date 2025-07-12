@@ -405,7 +405,10 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
         };
         int contentHeight = static_cast<int>(service.accounts.size()) * (blockHeight + spacing);
         int maxScroll = max(0, contentHeight - (yScrollArea - yStart));
-        int thumbHeight = max(30, (yScrollArea - yStart) * (yScrollArea - yStart) / contentHeight);
+        int thumbHeight = 0;
+        if (contentHeight > 0) {
+            thumbHeight = max(30, (yScrollArea - yStart) * (yScrollArea - yStart) / contentHeight);
+        }
         int thumbY = scrollbarTrack.y + (scrollOffset * (scrollbarTrack.h - thumbHeight)) / max(1, maxScroll);
         SDL_Rect scrollbarThumb = {
             scrollbarTrack.x,
@@ -691,7 +694,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         };
         int contentHeight = static_cast<int>(services.size()) * (buttonHeight + spacing);
         int maxScroll = max(0, contentHeight - (yScrollArea - yStart));
-        int thumbHeight = max(30, (yScrollArea - yStart) * (yScrollArea - yStart) / contentHeight);
+        int thumbHeight = 0;
+        if (contentHeight > 0) {
+            thumbHeight = max(30, (yScrollArea - yStart) * (yScrollArea - yStart) / contentHeight);
+        }
         int thumbY = scrollbarTrack.y + (scrollOffset * (scrollbarTrack.h - thumbHeight)) / max(1, maxScroll);
         SDL_Rect scrollbarThumb = {
             scrollbarTrack.x,
