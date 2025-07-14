@@ -3,7 +3,6 @@ Github;Player;Tata
 Github;Tutu;Pack
 Github;Tuton;pok
 Github;Lazy;pity
-Steam;Skuff;parol
 Steam2;Skuff;parol
 Steam3;Skuff;parol
 Steam4;Skuff;parol
@@ -12,4 +11,4 @@ Steam6;Skuff;parol
 Steam7;Skuff;parol
 Steam8;Skuff;parol
 Steam9;Skuff;parol
-r\;;
+123;;
