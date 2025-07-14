@@ -1,4 +1,5 @@
-HOW TO DOWNLOAD APP: download only folder /app
+HOW TO DOWNLOAD APP: got to another branch "app" where app is located, and download this as .zip file. That's all, you can locate it anywhere, just create a linker to it for fast access.
+КАК СКАЧАТЬ ПРИЛОЖЕНИЕ: перейдите на ветку "app" где приложение находится, и скачайте его как .zip файл. Это всё, можете создать для .exe ярлык и это будет работать, главное положение файлов внутри zip не менять
 
 
 
