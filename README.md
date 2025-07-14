@@ -1,3 +1,10 @@
+HOW TO DOWNLOAD APP: download only folder /app
+
+
+
+
+
+
 This project has 2 apps:
    1) Stores in a convienent and accessable way all your Accounts and Passwords for different Services, where you can easily find and copy pre-processed password for app 2
    2) The only function of this is to get fed with a pre-processed password and spit out post-processed password which will be used for service's account from app 1
