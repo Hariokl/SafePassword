@@ -19,6 +19,7 @@
 //TODO: add button to leave(arrow to the left) from service info to left of the service name, and to the right of it delete button when there is no accounts(mb even when there are)
 //TODO: change color of service buttons, as color blue must be associated with copy
 //TODO: right now not all buttons respond accordingly when mouse is on them
+//TODO: make a  Code Signing Certificate
 
 
 #include <SDL.h>
