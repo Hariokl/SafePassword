@@ -9,13 +9,17 @@
 //TODO: сделать словарь (структуру словарь), в котором будут хранится слова для кнопок на разных языках
 //TODO: создать настройки, в которых можно будет настроить языки
 //TODO: currently when wanting to exit the app when in accounts list, it just returns to services list (should be: when exiting the app it exits the app)
-//TODO: add more font sizes
+//TODO: add more font16 sizes
 //TODO: currently in services list, search bar y position is relative to service list, but it should be the other way around
 //TODO: make a separate folder near in root called app where new .exe and all things needed for it will be stored going forward
 //TODO: make an algorithm that will encryp/decrypt save file
 //TODO: add a message that password was copied
 //TODO: add button to return from list of accounts to list of services at the top near service name
 //TODO: make it so all fonts are in namespace and/or globally accessable
+//TODO: add button to leave(arrow to the left) from service info to left of the service name, and to the right of it delete button when there is no accounts(mb even when there are)
+//TODO: change color of service buttons, as color blue must be associated with copy
+//TODO: right now not all buttons respond accordingly when mouse is on them
+
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -32,6 +36,9 @@ const int WINDOW_WIDTH = 400;
 const int WINDOW_HEIGHT = 700;
 const int MAX_CHARACTERS = 20;
 const char PATH_SAVE[9] = "save.txt";
+
+TTF_Font* font16 = nullptr;
+TTF_Font* font32 = nullptr;
 
 struct Account {
     std::string accountName;
@@ -58,10 +65,10 @@ void saveToFile(const std::vector<Service>& services, const std::string& filenam
     }
     for (const auto& service : services) {
         for (const auto& account : service.accounts) {
-            outFile << service.label << ";" << account.accountName << ";" << account.password << "\n";
+            outFile << service.label << ';' << account.accountName << ';' << account.password << ';' << "\n";
         }
         if (service.accounts.size() == 0) {
-            outFile << service.label << ";;";
+            outFile << service.label << ";;;\n";
         }
     }
     outFile.close();
@@ -80,7 +87,7 @@ void loadFromFile(std::vector<Service>& services, const std::string& filename) {
         std::string serviceName, accountName, password;
         if (std::getline(ss, serviceName, ';') &&
             std::getline(ss, accountName, ';') &&
-            std::getline(ss, password)) {
+            std::getline(ss, password, ';')) {
 
             if (serviceMap.find(serviceName) == serviceMap.end()) {
                 services.emplace_back(Service{serviceName});
@@ -117,7 +124,14 @@ std::vector<const char*> extractAccountNames(const std::vector<Account>& account
 
 }
 
-MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, int size, const char** placeholders, const char** names) {
+void init() {
+    SDL_Init(SDL_INIT_VIDEO);
+    TTF_Init();
+    font16 = TTF_OpenFont("assets/fonts/Oswald-VariableFont_wght.ttf", 16);
+    font32 = TTF_OpenFont("assets/fonts/Oswald-VariableFont_wght.ttf", 32);
+}
+
+MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, int size, const char** placeholders, const char** names) {
     SDL_StartTextInput();
 
     std::vector<std::string> inputs(size, "");
@@ -151,12 +165,12 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
     const Uint32 messageDuration = 2000; // milliseconds
     std::string warningMessage = "This " + labelText + " already exists";
 
-    SDL_Surface* labelSurf = TTF_RenderText_Blended(font, labelText.c_str(), textColor);
+    SDL_Surface* labelSurf = TTF_RenderText_Blended(font16, labelText.c_str(), textColor);
     SDL_Texture* labelTex = SDL_CreateTextureFromSurface(renderer, labelSurf);
     int labelHeight = labelSurf->h;
     int warningMessageHeight = 0;
     {
-        SDL_Surface* tmp = TTF_RenderText_Blended(font, warningMessage.c_str(), textColor);
+        SDL_Surface* tmp = TTF_RenderText_Blended(font16, warningMessage.c_str(), textColor);
         warningMessageHeight = tmp->h;
         SDL_FreeSurface(tmp);
     }
@@ -317,7 +331,7 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
             std::string displayText = content.empty() ? placeholders[i] : content;
             SDL_Color colorToUse = content.empty() ? placeholderColor : textColor;
 
-            SDL_Surface* textSurf = TTF_RenderText_Blended(font, displayText.c_str(), colorToUse);
+            SDL_Surface* textSurf = TTF_RenderText_Blended(font16, displayText.c_str(), colorToUse);
             SDL_Texture* textTex = SDL_CreateTextureFromSurface(renderer, textSurf);
             SDL_Rect textRect = {
                 rect.x + 5,
@@ -340,7 +354,7 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &confirmRect);
 
-        SDL_Surface* btnTextSurf = TTF_RenderText_Blended(font, "Confirm", textColor);
+        SDL_Surface* btnTextSurf = TTF_RenderText_Blended(font16, "Confirm", textColor);
         SDL_Texture* btnTextTex = SDL_CreateTextureFromSurface(renderer, btnTextSurf);
         SDL_Rect btnTextRect = {
             confirmRect.x + (confirmRect.w - btnTextSurf->w) / 2,
@@ -360,7 +374,7 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
                 Uint8 alpha = static_cast<Uint8>(255 * (1.0f - progress)); // Fade out
 
                 SDL_Color warningColor = { 255, 100, 100, alpha };
-                SDL_Surface* warnSurf = TTF_RenderText_Blended(font, warningMessage.c_str(), warningColor);
+                SDL_Surface* warnSurf = TTF_RenderText_Blended(font16, warningMessage.c_str(), warningColor);
                 SDL_Texture* warnTex = SDL_CreateTextureFromSurface(renderer, warnSurf);
                 SDL_SetTextureAlphaMod(warnTex, alpha); // 🔧 Important
 
@@ -390,8 +404,7 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
     return { !canceled, inputs };
 }
 
-
-bool DeleteConfirmationPopup(SDL_Renderer* renderer, TTF_Font* font, const std::string& message, const std::string& accountName) {
+bool DeleteConfirmationPopup(SDL_Renderer* renderer, const std::string& message, const std::string& accountName) {
     bool confirmed = false;
     bool waiting = true;
 
@@ -445,7 +458,7 @@ bool DeleteConfirmationPopup(SDL_Renderer* renderer, TTF_Font* font, const std::
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &popupRect);
 
-        SDL_Surface* msgSurf = TTF_RenderText_Blended_Wrapped(font, fullMessage.c_str(), white, popupRect.w - 20);
+        SDL_Surface* msgSurf = TTF_RenderText_Blended_Wrapped(font16, fullMessage.c_str(), white, popupRect.w - 20);
         SDL_Texture* msgTex = SDL_CreateTextureFromSurface(renderer, msgSurf);
         SDL_Rect msgRect = {
             popupRect.x + (popupRect.w - msgSurf->w) / 2,
@@ -463,7 +476,7 @@ bool DeleteConfirmationPopup(SDL_Renderer* renderer, TTF_Font* font, const std::
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &yesBtn);
 
-        SDL_Surface* yesSurf = TTF_RenderText_Blended(font, "Yes", white);
+        SDL_Surface* yesSurf = TTF_RenderText_Blended(font16, "Yes", white);
         SDL_Texture* yesTex = SDL_CreateTextureFromSurface(renderer, yesSurf);
         SDL_Rect yesRect = {
             yesBtn.x + (yesBtn.w - yesSurf->w) / 2,
@@ -481,7 +494,7 @@ bool DeleteConfirmationPopup(SDL_Renderer* renderer, TTF_Font* font, const std::
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &noBtn);
 
-        SDL_Surface* noSurf = TTF_RenderText_Blended(font, "No", white);
+        SDL_Surface* noSurf = TTF_RenderText_Blended(font16, "No", white);
         SDL_Texture* noTex = SDL_CreateTextureFromSurface(renderer, noSurf);
         SDL_Rect noRect = {
             noBtn.x + (noBtn.w - noSurf->w) / 2,
@@ -501,7 +514,7 @@ bool DeleteConfirmationPopup(SDL_Renderer* renderer, TTF_Font* font, const std::
 }
 
 
-bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& service) {
+bool ServiceDetailsPopup(SDL_Renderer* renderer, Service& service) {
     bool done = false;
     int scrollOffset = 0;
     const int blockHeight = 120;
@@ -509,17 +522,37 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
     const int blockWidth = 300;
     bool deleteService = false;
     const Uint8 colorBackground[4] = {0, 0, 0, 255};
+    SDL_Color textColor = { 255, 255, 255, 255 };
     int paddingY = 20;
     int paddingX = 50;
     int btnHeight = 50;
     int btnWidth = 300;
+    int serviceBtnWidth = 40;
+    int serviceBtnHeight = 40;
 
     const int scrollbarWidth = 15;
     bool draggingScrollbar = false;
     int dragOffsetY = 0;
 
+    // For fading warning message
+    Uint32 messageTimer = 0;
+    const Uint32 messageDuration = 2000; // milliseconds
+    std::string message = "Password was copied";
+    SDL_Surface* labelSurf = TTF_RenderText_Blended(font16, message.c_str(), textColor);
+    SDL_Texture* labelTex = SDL_CreateTextureFromSurface(renderer, labelSurf);
+    int labelHeight = labelSurf->h;
+    int messageHeight = 0;
+    int messageWidth = 0;
+    {
+        SDL_Surface* tmp = TTF_RenderText_Blended(font16, message.c_str(), textColor);
+        messageHeight = tmp->h;
+        messageWidth = tmp->w;
+        SDL_FreeSurface(tmp);
+    }
+
+    SDL_Rect leaveServiceBtn = {paddingX / 2, paddingY, serviceBtnWidth, serviceBtnHeight};
     SDL_Rect addAccountBtn = { paddingX, WINDOW_HEIGHT - paddingY - btnHeight, btnWidth, btnHeight };
-    SDL_Rect deleteServiceBtn = { addAccountBtn.x, addAccountBtn.y - addAccountBtn.h - paddingY, addAccountBtn.w, addAccountBtn.h };
+    SDL_Rect deleteServiceBtn = { WINDOW_WIDTH - leaveServiceBtn.x - leaveServiceBtn.w, leaveServiceBtn.y, leaveServiceBtn.w, leaveServiceBtn.h };
     SDL_Event e;
     SDL_Color white = { 255, 255, 255, 255 };
 
@@ -572,12 +605,16 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                     dragOffsetY = my - scrollbarThumb.y;
                 }
 
+                if (SDL_PointInRect(&mousePoint, &leaveServiceBtn)) {
+                    done = true;
+                }
+
                 // Add account button
                 if (mx >= addAccountBtn.x && mx <= addAccountBtn.x + addAccountBtn.w &&
                     my >= addAccountBtn.y && my <= addAccountBtn.y + addAccountBtn.h) {
                     const char* placeholders[2] = {"Account Name", "Password" };
                     std::vector<const char*> names = extractAccountNames(service.accounts);
-                    MultiInputResult result = getMultipleTextInput(renderer, font, 2, placeholders, names.data());
+                    MultiInputResult result = getMultipleTextInput(renderer, 2, placeholders, names.data());
                     if (result.submitted) {
                         service.accounts.push_back(Account{result.inputs[0], result.inputs[1]});
                     }
@@ -586,7 +623,7 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                 // Delete service button
                 if (mx >= deleteServiceBtn.x && mx <= deleteServiceBtn.x + deleteServiceBtn.w &&
                     my >= deleteServiceBtn.y && my <= deleteServiceBtn.y + deleteServiceBtn.h) {
-                    // if (DeleteConfirmationPopup(renderer, font, "Delete this service?")) {
+                    // if (DeleteConfirmationPopup(renderer, "Delete this service?")) {
                     //     deleteService = true;
                     //     done = true;
                     // }
@@ -602,7 +639,7 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
 
                     if (mx >= deleteBtn.x && mx <= deleteBtn.x + deleteBtn.w &&
                         my >= deleteBtn.y && my <= deleteBtn.y + deleteBtn.h) {
-                        if (DeleteConfirmationPopup(renderer, font, "Delete this account?", service.accounts[i].accountName)) {
+                        if (DeleteConfirmationPopup(renderer, "Delete this account?", service.accounts[i].accountName)) {
                             service.accounts.erase(service.accounts.begin() + i);
                             scrollOffset = 0;
                         }
@@ -612,6 +649,7 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                     if (mx >= copyBtn.x && mx <= copyBtn.x + copyBtn.w &&
                         my >= copyBtn.y && my <= copyBtn.y + copyBtn.h) {
                         SDL_SetClipboardText(service.accounts[i].password.c_str());
+                        messageTimer = SDL_GetTicks();
                         break;
                     }
                 }
@@ -644,16 +682,17 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                 SDL_RenderDrawRect(renderer, &blockRect);
 
                 std::string accountStr = "Account: " + service.accounts[i].accountName;
-                std::string passwordStr = "Password: " + service.accounts[i].password;
+                std::string passwordStr = "Password: *******************";
+                // std::string passwordStr = "Password: " + service.accounts[i].password;
 
-                SDL_Surface* accSurf = TTF_RenderText_Blended(font, accountStr.c_str(), white);
+                SDL_Surface* accSurf = TTF_RenderText_Blended(font16, accountStr.c_str(), white);
                 SDL_Texture* accTex = SDL_CreateTextureFromSurface(renderer, accSurf);
                 SDL_Rect accRect = { blockRect.x + 10, blockRect.y + 10, accSurf->w, accSurf->h };
                 SDL_RenderCopy(renderer, accTex, nullptr, &accRect);
                 SDL_FreeSurface(accSurf);
                 SDL_DestroyTexture(accTex);
 
-                SDL_Surface* passSurf = TTF_RenderText_Blended(font, passwordStr.c_str(), white);
+                SDL_Surface* passSurf = TTF_RenderText_Blended(font16, passwordStr.c_str(), white);
                 SDL_Texture* passTex = SDL_CreateTextureFromSurface(renderer, passSurf);
                 SDL_Rect passRect = { blockRect.x + 10, blockRect.y + 35, passSurf->w, passSurf->h };
                 SDL_RenderCopy(renderer, passTex, nullptr, &passRect);
@@ -665,7 +704,7 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
                 SDL_RenderDrawRect(renderer, &deleteBtn);
 
-                SDL_Surface* delSurf = TTF_RenderText_Blended(font, "X", white);
+                SDL_Surface* delSurf = TTF_RenderText_Blended(font16, "X", white);
                 SDL_Texture* delTex = SDL_CreateTextureFromSurface(renderer, delSurf);
                 SDL_Rect delRect = {
                     deleteBtn.x + (deleteBtn.w - delSurf->w) / 2,
@@ -683,7 +722,7 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
                 SDL_RenderDrawRect(renderer, &copyBtn);
 
-                SDL_Surface* copySurf = TTF_RenderText_Blended(font, "Copy", white);
+                SDL_Surface* copySurf = TTF_RenderText_Blended(font16, "Copy", white);
                 SDL_Texture* copyTex = SDL_CreateTextureFromSurface(renderer, copySurf);
                 SDL_Rect copyRect = {
                     copyBtn.x + (copyBtn.w - copySurf->w) / 2,
@@ -720,6 +759,31 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                 SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
                 SDL_RenderFillRect(renderer, &scrollbarThumb);
             }
+            // 🔧 Show warning message if triggered
+            if (messageTimer > 0) {
+                Uint32 elapsed = SDL_GetTicks() - messageTimer;
+                if (elapsed < messageDuration) {
+                    float progress = (float)elapsed / messageDuration;
+                    Uint8 alpha = static_cast<Uint8>(255 * (1.0f - progress)); // Fade out
+
+                    SDL_Color messageColor = { 50, 150, 255, alpha };
+                    SDL_Surface* messageSurf = TTF_RenderText_Blended(font16, message.c_str(), messageColor);
+                    SDL_Texture* messageSurfText = SDL_CreateTextureFromSurface(renderer, messageSurf);
+                    SDL_SetTextureAlphaMod(messageSurfText, alpha); // 🔧 Important
+
+                    SDL_Rect warnRect = {
+                        (WINDOW_WIDTH - messageWidth) / 2,
+                        yScrollArea + spacing,
+                        messageWidth,
+                        messageHeight
+                    };
+                    SDL_RenderCopy(renderer, messageSurfText, nullptr, &warnRect);
+                    SDL_FreeSurface(messageSurf);
+                    SDL_DestroyTexture(messageSurfText);
+                } else {
+                    messageTimer = 0; // Reset
+                }
+            }
         } else {
             // Delete Service button (no accounts case)
             SDL_SetRenderDrawColor(renderer, 200, 50, 50, 255);
@@ -727,7 +791,7 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
             SDL_RenderDrawRect(renderer, &deleteServiceBtn);
 
-            SDL_Surface* delServText = TTF_RenderText_Blended(font, "Delete Service", white);
+            SDL_Surface* delServText = TTF_RenderText_Blended(font16, "X", white);
             SDL_Texture* delServTex = SDL_CreateTextureFromSurface(renderer, delServText);
             SDL_Rect delServRect = {
                 deleteServiceBtn.x + (deleteServiceBtn.w - delServText->w) / 2,
@@ -741,19 +805,37 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
         }
 
         // Title
-        SDL_Surface* titleSurf = TTF_RenderText_Blended(font, service.label.c_str(), white);
+        SDL_Surface* titleSurf = TTF_RenderText_Blended(font32, service.label.c_str(), white);
         SDL_Texture* titleTex = SDL_CreateTextureFromSurface(renderer, titleSurf);
-        SDL_Rect titleRect = { 60, 30, titleSurf->w, titleSurf->h };
+        SDL_Rect titleRect = { (WINDOW_WIDTH - titleSurf->w) / 2, (yStart - titleSurf->h) / 2, titleSurf->w, titleSurf->h };
         SDL_RenderCopy(renderer, titleTex, nullptr, &titleRect);
         SDL_FreeSurface(titleSurf);
         SDL_DestroyTexture(titleTex);
+
+        // Delete Service button (no accounts case)
+        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+        SDL_RenderFillRect(renderer, &leaveServiceBtn);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &leaveServiceBtn);
+
+        SDL_Surface* leaveServText = TTF_RenderText_Blended(font32, "<=", white);
+        SDL_Texture* leaveServTex = SDL_CreateTextureFromSurface(renderer, leaveServText);
+        SDL_Rect delServRect = {
+            leaveServiceBtn.x + (leaveServiceBtn.w - leaveServText->w) / 2,
+            leaveServiceBtn.y + (leaveServiceBtn.h - leaveServText->h) / 2,
+            leaveServText->w,
+            leaveServText->h
+        };
+        SDL_RenderCopy(renderer, leaveServTex, nullptr, &delServRect);
+        SDL_FreeSurface(leaveServText);
+        SDL_DestroyTexture(leaveServTex);
 
         // Add Account button
         SDL_SetRenderDrawColor(renderer, 34, 139, 34, 255);
         SDL_RenderFillRect(renderer, &addAccountBtn);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &addAccountBtn);
-        SDL_Surface* addTextSurf = TTF_RenderText_Blended(font, "Add Account", white);
+        SDL_Surface* addTextSurf = TTF_RenderText_Blended(font16, "Add Account", white);
         SDL_Texture* addTextTex = SDL_CreateTextureFromSurface(renderer, addTextSurf);
         SDL_Rect addTextRect = {
             addAccountBtn.x + (addAccountBtn.w - addTextSurf->w) / 2,
@@ -775,17 +857,14 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
 // used to be main(), but since I decided to use windows.h to remove console, so it needed to be changed
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
-    SDL_Init(SDL_INIT_VIDEO);
-    TTF_Init();
-
+    init();
     const Uint8 colorBackground[4] = {25, 25, 25, 255};
 
     SDL_Window* window = SDL_CreateWindow("Fixed Size Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    TTF_Font* font = TTF_OpenFont("assets/fonts/Oswald-VariableFont_wght.ttf", 16);
-    if (!font) {
-        std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
+    if (!font16) {
+        std::cerr << "Failed to load font16: " << TTF_GetError() << std::endl;
         return 1;
     }
     std::vector<Service> services;
@@ -794,7 +873,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     auto addService = [&]() {
         const char* placeholders[1] = {"Service name"};
         std::vector<const char*> names = extractServiceNames(services);
-        MultiInputResult result = getMultipleTextInput(renderer, font, 1, placeholders, names.data());
+        MultiInputResult result = getMultipleTextInput(renderer, 1, placeholders, names.data());
         if (result.submitted) {
             Service newService;
             newService.label = result.inputs[0];
@@ -896,7 +975,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                         if (mx >= btnRect.x && mx <= btnRect.x + btnRect.w &&
                             my >= btnRect.y && my <= btnRect.y + btnRect.h) {
                             // Show popup, delete service if requested
-                            bool deleted = ServiceDetailsPopup(renderer, font, services[i]);
+                            bool deleted = ServiceDetailsPopup(renderer, services[i]);
                             if (deleted) {
                                 services.erase(services.begin() + i);
                                 accessableButtons.erase(accessableButtons.begin() + i);
@@ -966,7 +1045,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             SDL_RenderDrawRect(renderer, &btnRect);
 
             if (!services[i].label.empty()) {
-                SDL_Surface* textSurf = TTF_RenderText_Blended(font, services[i].label.c_str(), { 255, 255, 255, 255 });
+                SDL_Surface* textSurf = TTF_RenderText_Blended(font16, services[i].label.c_str(), { 255, 255, 255, 255 });
                 SDL_Texture* textTex = SDL_CreateTextureFromSurface(renderer, textSurf);
                 SDL_Rect textRect = {
                     btnRect.x + (btnRect.w - textSurf->w) / 2,
@@ -1032,7 +1111,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             displayText = searchQuery;
         }
         SDL_Color textColor = { 255, 255, 255, 255 };
-        SDL_Surface* searchSurf = TTF_RenderText_Blended(font, displayText.c_str(), textColor);
+        SDL_Surface* searchSurf = TTF_RenderText_Blended(font16, displayText.c_str(), textColor);
         if (searchSurf) {
             SDL_Texture* searchTex = SDL_CreateTextureFromSurface(renderer, searchSurf);
             SDL_Rect textRect = {
@@ -1065,7 +1144,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &addBtnRect);
 
-        SDL_Surface* addTextSurf = TTF_RenderText_Blended(font, "Add Service", { 255, 255, 255, 255 });
+        SDL_Surface* addTextSurf = TTF_RenderText_Blended(font16, "Add Service", { 255, 255, 255, 255 });
         SDL_Texture* addTextTex = SDL_CreateTextureFromSurface(renderer, addTextSurf);
         SDL_Rect addTextRect = {
             addBtnRect.x + (addBtnRect.w - addTextSurf->w) / 2,
@@ -1083,7 +1162,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     SDL_StopTextInput();
 
-    TTF_CloseFont(font);
+    TTF_CloseFont(font16);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     TTF_Quit();
