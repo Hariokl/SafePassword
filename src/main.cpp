@@ -460,7 +460,7 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                 // Add account button
                 if (mx >= addAccountBtn.x && mx <= addAccountBtn.x + addAccountBtn.w &&
                     my >= addAccountBtn.y && my <= addAccountBtn.y + addAccountBtn.h) {
-                    MultiInputResult result = getMultipleTextInput(renderer, font, 20);
+                    MultiInputResult result = getMultipleTextInput(renderer, font);
                     if (result.submitted) {
                         service.accounts.push_back(result.account);
                     }
