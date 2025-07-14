@@ -2,15 +2,25 @@
 //TODO: make it so when adding new service/account with the same name, it says that it already exists and not exits adding pop up
 //TODO: unite getServiceNameInput and getMultipleTextInput into one function (also structures MultiInputResult and ServiceInputResult unite into one structure)
 //TODO: make it, so all buttons, heights, widths and placement is connected to WIDTH and HEIGHT of the window (there should be relativity everywhere to WIDTH and HEIGHT)
-//TODO: make this more universal code by adding specified int and char types like int8
-//TODO: make a searchbar for services (idk about accounts it seems just like a wasted space in an app)
-//TODO: mb make it so even when not selected you can type in searchbar (so when entering the app, you can instatnly write 'github' and it will search it)
+//TODO: make this more universal code (for different systems) by adding specified int and char types like int8
 //TODO: make this available for linux (?)
 //TODO: make a better visuals altogether :D
 //TODO: make it so user can't leave account name and service name empty
 //TODO: кнопка delete слишком вырежена, мб перенести в главный экран и сделать крестик
 //TODO: make it so user can rearange services/accounts however they want
 //TODO: to make a better code, mb instead of updating variables every loop, while not update them only when changes are made
+//TODO: сделать словарь (структуру словарь), в котором будут хранится слова для кнопок на разных языках
+//TODO: создать настройки, в которых можно будет настроить языки
+//TODO: сделать более красивое окно дбавления аккаунта/сервиса (например прозрачность окна как на окне удаления)
+//TODO: сделать так, что когда юзер нажимает мимо окна удаления/добавления, оно возвращается/выходит из окна
+//TODO: currently when wanting to exit the app when in accounts list, it just returns to services list (should be: when exiting the app it exits the app)
+//TODO: add more font sizes
+//TODO: currently in services list, search bar y position is relative to service list, but it should be the other way around
+//TODO: make it so when searchbar is active, it blinks (and make it inactive when clicked somewhere else)
+//TODO: make a separate folder near in root called app where new .exe and all things needed for it will be stored going forward
+//TODO: make an algorithm that will encryp/decrypt save file
+//TODO: add a message that password was copied
+//TODO: add button to return from list of accounts to list of services at the top near service name
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -42,12 +52,7 @@ struct Service {
 
 struct MultiInputResult {
     bool submitted;
-    Account account;
-};
-
-struct ServiceInputResult {
-    bool submitted = false;
-    std::string label;
+    std::vector<std::string> inputs;
 };
 
 void saveToFile(const std::vector<Service>& services, const std::string& filename) {
@@ -99,83 +104,10 @@ void loadFromFile(std::vector<Service>& services, const std::string& filename) {
 
 }
 
-ServiceInputResult getServiceNameInput(SDL_Renderer* renderer, TTF_Font* font) {
+MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, int size, const char** placeholders) {
     SDL_StartTextInput();
 
-    std::string inputText;
-    bool done = false;
-    bool submitted = false;
-    const char* placeholder = "Service Name";
-    SDL_Event e;
-
-    SDL_Color boxColor = { 50, 50, 50, 255 };
-    SDL_Color borderColor = { 255, 255, 255, 255 };
-    SDL_Color textColor = { 255, 255, 255, 255 };
-    SDL_Color placeholderColor = { 150, 150, 150, 255 };
-
-    // Define rectangles for input boxes stacked vertically
-    SDL_Rect inputRect = { 50, 290, 300, 50 };
-
-    while (!done && !submitted) {
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) {
-                done = true;
-            }
-            else if (e.type == SDL_TEXTINPUT) {
-                if (inputText.size() < (size_t)MAX_CHARACTERS) {
-                    inputText += e.text.text;
-                }
-            }
-            else if (e.type == SDL_KEYDOWN) {
-                if (e.key.keysym.sym == SDLK_BACKSPACE && !inputText.empty()) {
-                    inputText.pop_back();
-                }
-                else if (e.key.keysym.sym == SDLK_RETURN) {
-                    submitted = true;
-                }
-                else if (e.key.keysym.sym == SDLK_ESCAPE) {
-                    done = true;
-                }
-            }
-        }
-
-        // Clear screen
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-
-        // Fill box
-        SDL_SetRenderDrawColor(renderer, boxColor.r, boxColor.g, boxColor.b, boxColor.a);
-        SDL_RenderFillRect(renderer, &inputRect);
-
-        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-        SDL_RenderDrawRect(renderer, &inputRect);
-        // Render text or placeholder
-        const std::string& textToRender = (inputText.empty()) ? placeholder : inputText;
-        SDL_Color colorToUse = (inputText.empty()) ? placeholderColor : textColor;
-
-        std::string displayText = textToRender;
-
-        SDL_Surface* textSurf = TTF_RenderText_Blended(font, displayText.c_str(), colorToUse);
-        SDL_Texture* textTex = SDL_CreateTextureFromSurface(renderer, textSurf);
-        SDL_Rect textRect = { inputRect.x + 5, inputRect.y + 10, textSurf->w, textSurf->h };
-        SDL_RenderCopy(renderer, textTex, nullptr, &textRect);
-        SDL_FreeSurface(textSurf);
-        SDL_DestroyTexture(textTex);
-
-        SDL_RenderPresent(renderer);
-        SDL_Delay(16);
-    }
-
-    SDL_StopTextInput();
-    return { submitted, inputText };
-}
-
-
-MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, int maxLen = 20) {
-    SDL_StartTextInput();
-
-    std::string inputs[2] = { "", "" };
-    const char* placeholders[2] = {"Account Name", "Password" };
+    std::vector<std::string> inputs(size, "");
     int activeInput = 0;
     bool done = false;
     bool canceled = false;
@@ -187,11 +119,16 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
     SDL_Color textColor = { 255, 255, 255, 255 };
     SDL_Color placeholderColor = { 150, 150, 150, 255 };
 
-    // Define rectangles for input boxes stacked vertically
-    SDL_Rect inputRects[2] = {
-        { 50, 290, 300, 50 },
-        { 50, 360, 300, 50 }
-    };
+    const int boxWidth = 300;
+    const int boxHeight = 50;
+    const int boxX = 50;
+    const int boxYStart = 290;
+    const int boxSpacing = 70;
+
+    std::vector<SDL_Rect> inputRects;
+    for (int i = 0; i < size; ++i) {
+        inputRects.push_back(SDL_Rect{ boxX, boxYStart + i * boxSpacing, boxWidth, boxHeight });
+    }
 
     while (!done && !canceled) {
         while (SDL_PollEvent(&e)) {
@@ -199,7 +136,7 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
                 canceled = true;
             }
             else if (e.type == SDL_TEXTINPUT) {
-                if (inputs[activeInput].size() < (size_t)maxLen) {
+                if (inputs[activeInput].size() < (size_t)MAX_CHARACTERS) {
                     inputs[activeInput] += e.text.text;
                 }
             }
@@ -214,7 +151,7 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
                     canceled = true;
                 }
                 else if (e.key.keysym.sym == SDLK_TAB) {
-                    activeInput = (activeInput + 1) % 2;
+                    activeInput = (activeInput + 1) % size;
                 }
             }
         }
@@ -223,46 +160,36 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        // Draw all input boxes with placeholders or input text
-        for (int i = 0; i < 2; ++i) {
-            // Fill box
+        // Draw all input boxes
+        for (int i = 0; i < size; ++i) {
+            const SDL_Rect& rect = inputRects[i];
+
             SDL_SetRenderDrawColor(renderer, boxColor.r, boxColor.g, boxColor.b, boxColor.a);
-            SDL_RenderFillRect(renderer, &inputRects[i]);
+            SDL_RenderFillRect(renderer, &rect);
 
-            // Draw border (highlight if active)
-            if (i == activeInput) {
-                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);  // yellow highlight
-            } else {
-                SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
-            }
-            SDL_RenderDrawRect(renderer, &inputRects[i]);
+            SDL_SetRenderDrawColor(renderer,
+                (i == activeInput) ? 255 : borderColor.r,
+                (i == activeInput) ? 255 : borderColor.g,
+                (i == activeInput) ? 0   : borderColor.b,
+                255);
+            SDL_RenderDrawRect(renderer, &rect);
 
-            // Render text or placeholder
-            const std::string& textToRender = (inputs[i].empty()) ? placeholders[i] : inputs[i];
-            SDL_Color colorToUse = (inputs[i].empty()) ? placeholderColor : textColor;
-
-            std::string displayText = textToRender;
-            // For password field (index 2), mask text with '*'
-            // if (i == 1 && !inputs[i].empty()) {
-            //     displayText = std::string(inputs[i].size(), '*');
-            // }
+            const std::string& content = inputs[i];
+            std::string displayText = content.empty() ? placeholders[i] : content;
+            SDL_Color colorToUse = content.empty() ? placeholderColor : textColor;
 
             SDL_Surface* textSurf = TTF_RenderText_Blended(font, displayText.c_str(), colorToUse);
             SDL_Texture* textTex = SDL_CreateTextureFromSurface(renderer, textSurf);
-            SDL_Rect textRect = { inputRects[i].x + 5, inputRects[i].y + 10, textSurf->w, textSurf->h };
+            SDL_Rect textRect = {
+                rect.x + 5,
+                rect.y + (rect.h - textSurf->h) / 2,
+                textSurf->w,
+                textSurf->h
+            };
             SDL_RenderCopy(renderer, textTex, nullptr, &textRect);
             SDL_FreeSurface(textSurf);
             SDL_DestroyTexture(textTex);
         }
-
-        // Draw instruction at bottom
-        const char* instruction = "Press Enter to submit, Esc to cancel, Tab to switch fields";
-        SDL_Surface* instrSurf = TTF_RenderText_Blended(font, instruction, textColor);
-        SDL_Texture* instrTex = SDL_CreateTextureFromSurface(renderer, instrSurf);
-        SDL_Rect instrRect = { 50, 430, instrSurf->w, instrSurf->h };
-        SDL_RenderCopy(renderer, instrTex, nullptr, &instrRect);
-        SDL_FreeSurface(instrSurf);
-        SDL_DestroyTexture(instrTex);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
@@ -270,14 +197,11 @@ MultiInputResult getMultipleTextInput(SDL_Renderer* renderer, TTF_Font* font, in
 
     SDL_StopTextInput();
 
-    if (canceled) {
-        return { false, "", "" };
-    } else {
-        return { true, Account{inputs[0], inputs[1]} };
-    }
+    return { !canceled, inputs };
 }
 
-bool DeleteConfirmationPopup(SDL_Renderer* renderer, TTF_Font* font, const std::string& message) {
+
+bool DeleteConfirmationPopup(SDL_Renderer* renderer, TTF_Font* font, const std::string& message, const std::string& accountName) {
     bool confirmed = false;
     bool waiting = true;
 
@@ -287,6 +211,14 @@ bool DeleteConfirmationPopup(SDL_Renderer* renderer, TTF_Font* font, const std::
 
     SDL_Color white = { 255, 255, 255, 255 };
     SDL_Color bgColor = { 40, 40, 40, 255 };
+
+    // Create combined message that includes account name
+    std::string fullMessage = message + "\nAccount: " + accountName;
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
+    SDL_Rect overlayRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
+    SDL_RenderFillRect(renderer, &overlayRect);
 
     SDL_Event e;
     while (waiting) {
@@ -312,15 +244,12 @@ bool DeleteConfirmationPopup(SDL_Renderer* renderer, TTF_Font* font, const std::
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
-        SDL_RenderFillRect(renderer, nullptr);
-
         SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, 255);
         SDL_RenderFillRect(renderer, &popupRect);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &popupRect);
 
-        SDL_Surface* msgSurf = TTF_RenderText_Blended_Wrapped(font, message.c_str(), white, popupRect.w - 20);
+        SDL_Surface* msgSurf = TTF_RenderText_Blended_Wrapped(font, fullMessage.c_str(), white, popupRect.w - 20);
         SDL_Texture* msgTex = SDL_CreateTextureFromSurface(renderer, msgSurf);
         SDL_Rect msgRect = {
             popupRect.x + (popupRect.w - msgSurf->w) / 2,
@@ -374,6 +303,7 @@ bool DeleteConfirmationPopup(SDL_Renderer* renderer, TTF_Font* font, const std::
 
     return confirmed;
 }
+
 
 bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& service) {
     bool done = false;
@@ -449,31 +379,35 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                 // Add account button
                 if (mx >= addAccountBtn.x && mx <= addAccountBtn.x + addAccountBtn.w &&
                     my >= addAccountBtn.y && my <= addAccountBtn.y + addAccountBtn.h) {
-                    MultiInputResult result = getMultipleTextInput(renderer, font, 20);
+                    const char* placeholders[2] = {"Account Name", "Password" };
+                    MultiInputResult result = getMultipleTextInput(renderer, font, 2, placeholders);
                     if (result.submitted) {
-                        service.accounts.push_back(result.account);
+                        service.accounts.push_back(Account{result.inputs[0], result.inputs[1]});
                     }
                 }
 
                 // Delete service button
                 if (mx >= deleteServiceBtn.x && mx <= deleteServiceBtn.x + deleteServiceBtn.w &&
                     my >= deleteServiceBtn.y && my <= deleteServiceBtn.y + deleteServiceBtn.h) {
-                    if (DeleteConfirmationPopup(renderer, font, "Are you sure you want to delete this service?")) {
-                        deleteService = true;
-                        done = true;
-                    }
+                    // if (DeleteConfirmationPopup(renderer, font, "Delete this service?")) {
+                    //     deleteService = true;
+                    //     done = true;
+                    // }
+                    deleteService = true;
+                    done = true;
                 }
 
                 // Account delete/copy buttons
                 for (size_t i = 0; i < service.accounts.size(); ++i) {
                     int y = 80 + static_cast<int>(i) * (blockHeight + spacing) - scrollOffset;
-                    SDL_Rect deleteBtn = { 80, y + 60, 80, 30 };
-                    SDL_Rect copyBtn = { 200, y + 60, 80, 30 };
+                    SDL_Rect deleteBtn = { blockX + blockWidth - 20 - 30, y + 20, 30, 30 };
+                    SDL_Rect copyBtn = { blockX + 20, y + blockHeight - 20 - 30, blockWidth - 20 * 2, 30 };
 
                     if (mx >= deleteBtn.x && mx <= deleteBtn.x + deleteBtn.w &&
                         my >= deleteBtn.y && my <= deleteBtn.y + deleteBtn.h) {
-                        if (DeleteConfirmationPopup(renderer, font, "Are you sure you want to delete this account?")) {
+                        if (DeleteConfirmationPopup(renderer, font, "Delete this account?", service.accounts[i].accountName)) {
                             service.accounts.erase(service.accounts.begin() + i);
+                            scrollOffset = 0;
                         }
                         break;
                     }
@@ -528,14 +462,13 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                 SDL_RenderCopy(renderer, passTex, nullptr, &passRect);
                 SDL_FreeSurface(passSurf);
                 SDL_DestroyTexture(passTex);
-
-                SDL_Rect deleteBtn = { blockRect.x + 30, blockRect.y + 70, 80, 30 };
+                SDL_Rect deleteBtn = { blockX + blockWidth - 20 - 30, y + 20, 30, 30 };
                 SDL_SetRenderDrawColor(renderer, 200, 50, 50, 255);
                 SDL_RenderFillRect(renderer, &deleteBtn);
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
                 SDL_RenderDrawRect(renderer, &deleteBtn);
 
-                SDL_Surface* delSurf = TTF_RenderText_Blended(font, "Delete", white);
+                SDL_Surface* delSurf = TTF_RenderText_Blended(font, "X", white);
                 SDL_Texture* delTex = SDL_CreateTextureFromSurface(renderer, delSurf);
                 SDL_Rect delRect = {
                     deleteBtn.x + (deleteBtn.w - delSurf->w) / 2,
@@ -547,7 +480,7 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                 SDL_FreeSurface(delSurf);
                 SDL_DestroyTexture(delTex);
 
-                SDL_Rect copyBtn = { blockRect.x + 150, blockRect.y + 70, 80, 30 };
+                SDL_Rect copyBtn = { blockX + 20, y + blockHeight - 20 - 30, blockWidth - 20 * 2, 30 };
                 SDL_SetRenderDrawColor(renderer, 50, 150, 200, 255);
                 SDL_RenderFillRect(renderer, &copyBtn);
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -564,32 +497,31 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
                 SDL_RenderCopy(renderer, copyTex, nullptr, &copyRect);
                 SDL_FreeSurface(copySurf);
                 SDL_DestroyTexture(copyTex);
+            }
+            // Draw rectangles to keep it beautifful :)
+            SDL_Rect topEdge = { 0, 0, WINDOW_WIDTH, yStart};
+            SDL_Rect bottomEdge = { 0, yScrollArea, WINDOW_WIDTH, WINDOW_HEIGHT - yScrollArea};
+            // SDL_Rect leftEdge = { 0, 0, blockX, WINDOW_HEIGHT};
+            // SDL_Rect rightEdge = { blockX + blockWidth, 0, blockX, WINDOW_HEIGHT };
+            SDL_Rect btnsRect = {blockX, yStart, blockWidth, yScrollArea - yStart};
+            SDL_SetRenderDrawColor(renderer, colorBackground[0], colorBackground[1], colorBackground[2], colorBackground[3]);
+            SDL_RenderFillRect(renderer, &topEdge);
+            SDL_RenderFillRect(renderer, &bottomEdge);
+            // SDL_RenderFillRect(renderer, &leftEdge);
+            // SDL_RenderFillRect(renderer, &rightEdge);
+            // int yLast = yStart + static_cast<int>(service.accounts.size()) * (blockHeight + spacing) - scrollOffset;
+            // if (yLast >= yScrollArea) {
+            //     SDL_SetRenderDrawColor(renderer,  colorBackground[0] + 50, colorBackground[1] + 50, colorBackground[2] + 50, colorBackground[3]);
+            //     SDL_RenderDrawRect(renderer, &btnsRect);
+            // }
+            if (contentHeight > (yScrollArea - yStart)) {
+                // Scrollbar background
+                SDL_SetRenderDrawColor(renderer, 70, 70, 70, 255);
+                SDL_RenderFillRect(renderer, &scrollbarTrack);
 
-                // Draw rectangles to keep it beautifful :)
-                SDL_Rect topEdge = { 0, 0, WINDOW_WIDTH, yStart};
-                SDL_Rect bottomEdge = { 0, yScrollArea, WINDOW_WIDTH, WINDOW_HEIGHT - yScrollArea};
-                // SDL_Rect leftEdge = { 0, 0, blockX, WINDOW_HEIGHT};
-                // SDL_Rect rightEdge = { blockX + blockWidth, 0, blockX, WINDOW_HEIGHT };
-                SDL_Rect btnsRect = {blockX, yStart, blockWidth, yScrollArea - yStart};
-                SDL_SetRenderDrawColor(renderer, colorBackground[0], colorBackground[1], colorBackground[2], colorBackground[3]);
-                SDL_RenderFillRect(renderer, &topEdge);
-                SDL_RenderFillRect(renderer, &bottomEdge);
-                // SDL_RenderFillRect(renderer, &leftEdge);
-                // SDL_RenderFillRect(renderer, &rightEdge);
-                // int yLast = yStart + static_cast<int>(service.accounts.size()) * (blockHeight + spacing) - scrollOffset;
-                // if (yLast >= yScrollArea) {
-                //     SDL_SetRenderDrawColor(renderer,  colorBackground[0] + 50, colorBackground[1] + 50, colorBackground[2] + 50, colorBackground[3]);
-                //     SDL_RenderDrawRect(renderer, &btnsRect);
-                // }
-                if (contentHeight > (yScrollArea - yStart)) {
-                    // Scrollbar background
-                    SDL_SetRenderDrawColor(renderer, 70, 70, 70, 255);
-                    SDL_RenderFillRect(renderer, &scrollbarTrack);
-
-                    // Scrollbar thumb
-                    SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
-                    SDL_RenderFillRect(renderer, &scrollbarThumb);
-                }
+                // Scrollbar thumb
+                SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
+                SDL_RenderFillRect(renderer, &scrollbarThumb);
             }
         } else {
             // Delete Service button (no accounts case)
@@ -612,8 +544,7 @@ bool ServiceDetailsPopup(SDL_Renderer* renderer, TTF_Font* font, Service& servic
         }
 
         // Title
-        std::string title = "Service: " + service.label;
-        SDL_Surface* titleSurf = TTF_RenderText_Blended(font, title.c_str(), white);
+        SDL_Surface* titleSurf = TTF_RenderText_Blended(font, service.label.c_str(), white);
         SDL_Texture* titleTex = SDL_CreateTextureFromSurface(renderer, titleSurf);
         SDL_Rect titleRect = { 60, 30, titleSurf->w, titleSurf->h };
         SDL_RenderCopy(renderer, titleTex, nullptr, &titleRect);
@@ -654,6 +585,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     SDL_Window* window = SDL_CreateWindow("Fixed Size Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     TTF_Font* font = TTF_OpenFont("assets/fonts/Oswald-VariableFont_wght.ttf", 16);
     if (!font) {
         std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
@@ -663,10 +595,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     loadFromFile(services, PATH_SAVE);
 
     auto addService = [&]() {
-        ServiceInputResult result = getServiceNameInput(renderer, font);
+        const char* placeholders[1] = {"Service name"};
+        MultiInputResult result = getMultipleTextInput(renderer, font, 1, placeholders);
         if (result.submitted) {
             Service newService;
-            newService.label = result.label;
+            newService.label = result.inputs[0];
             services.push_back(newService);
         }
     };
@@ -682,19 +615,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     SDL_Event event;
     std::string searchQuery;
     bool searchActive = false;
-    int accessableButtons = 0;
+    int accessableButtonsCount = 0;
+    std::vector<int> accessableButtons(services.size(), 0);
+    Uint32 lastBlinkTime = SDL_GetTicks();
+    bool showCaret = true;
+    const int blinkInterval = 500; // milliseconds
+
 
     SDL_StartTextInput();
     while (running) {
         //TODO: remove from loop all constants
-        int xStart = static_cast<int>(WINDOW_WIDTH * 0.15); //
-        int yStart = static_cast<int>(WINDOW_HEIGHT * 0.2); //
-        int yScrollArea = static_cast<int>(WINDOW_HEIGHT * 0.7); //
+        int xStart = static_cast<int>(WINDOW_WIDTH * 0.1); //
+        int yStart = static_cast<int>(WINDOW_HEIGHT * 0.15); //
+        int yScrollArea = static_cast<int>(WINDOW_HEIGHT * 0.8); //
         int buttonWidth = WINDOW_WIDTH - 2 * xStart; //
         int buttonHeight = 50;
         int spacing = 10;
-        SDL_Rect addBtnRect = { WINDOW_WIDTH - 160, WINDOW_HEIGHT - 70, 140, 50 };
-        SDL_Rect searchBarRect = { xStart, yStart - 50, buttonWidth, 40 };
+        SDL_Rect addBtnRect = { xStart + 20, yScrollArea + ((WINDOW_HEIGHT - 70 - yScrollArea) >> 1), WINDOW_WIDTH - (xStart + 20) * 2, 70 };
+        SDL_Rect searchBarRect = { xStart, yStart - 80, buttonWidth, 60 };
 
         SDL_Rect scrollbarTrack = {
             xStart + buttonWidth + 10,  // To the right of account blocks
@@ -702,7 +640,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             scrollbarWidth,
             yScrollArea - yStart
         };
-        int contentHeight = static_cast<int>(accessableButtons) * (buttonHeight + spacing);
+        int contentHeight = static_cast<int>(accessableButtonsCount) * (buttonHeight + spacing);
         int maxScroll = max(0, contentHeight - (yScrollArea - yStart));
         int thumbHeight = 0;
         if (contentHeight > 0) {
@@ -743,9 +681,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     dragOffsetY = my - scrollbarThumb.y;
                 } else if (SDL_PointInRect(&mousePoint, &addBtnRect)) {
                     addService();
+                    accessableButtons.push_back(0);
+                    if (!SDL_IsTextInputActive()) {
+                        SDL_StartTextInput();
+                    }
                 } else {
+                    int notVisible = 0;
                     for (size_t i = 0; i < services.size(); ++i) {
-                        int y = static_cast<int>(i) * (buttonHeight + spacing) - scrollOffset + yStart;
+                        if (accessableButtons[i] == 0) {
+                            ++notVisible;
+                            continue;
+                        }
+                        if (my < yStart || my > yScrollArea) continue;
+                        int y = (static_cast<int>(i) - notVisible) * (buttonHeight + spacing) - scrollOffset + yStart;
                         SDL_Rect btnRect = { xStart, y, buttonWidth, buttonHeight };
                         if (mx >= btnRect.x && mx <= btnRect.x + btnRect.w &&
                             my >= btnRect.y && my <= btnRect.y + btnRect.h) {
@@ -753,7 +701,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                             bool deleted = ServiceDetailsPopup(renderer, font, services[i]);
                             if (deleted) {
                                 services.erase(services.begin() + i);
+                                accessableButtons.erase(accessableButtons.begin() + i);
                                 selectedService = nullptr;
+                                scrollOffset = 0;
+                            }
+                            if (!SDL_IsTextInputActive()) {
+                                SDL_StartTextInput();
                             }
                             break;
                         }
@@ -777,6 +730,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             if (event.type == SDL_TEXTINPUT && searchActive) {
                 searchQuery += event.text.text;
+                scrollOffset = 0;
             } else if (event.type == SDL_KEYDOWN && searchActive) {
                 if (event.key.keysym.sym == SDLK_BACKSPACE && !searchQuery.empty()) {
                     searchQuery.pop_back();
@@ -794,14 +748,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         // Draw service buttons
-        int visibleIndex = 0;
-        accessableButtons = 0;
+        accessableButtonsCount = 0;
         for (size_t i = 0; i < services.size(); ++i) {
-            if (!searchQuery.empty() && services[i].label.find(searchQuery) == std::string::npos) continue;
-            ++visibleIndex;
-            ++accessableButtons;
+            if (!searchQuery.empty() && services[i].label.find(searchQuery) == std::string::npos) {
+                accessableButtons[i] = 0;
+                continue;
+            }
+            accessableButtons[i] = 1;
 
-            int y = visibleIndex * (buttonHeight + spacing) - scrollOffset + yStart;
+            int y = accessableButtonsCount * (buttonHeight + spacing) - scrollOffset + yStart;
+            ++accessableButtonsCount;
             if (y + buttonHeight < yStart || y > yStart + (yScrollArea - yStart)) continue;
             lastServiceI = i;
             SDL_Rect btnRect = { xStart, y, buttonWidth, buttonHeight };
@@ -860,28 +816,50 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         SDL_RenderDrawRect(renderer, &searchBarRect);
 
         // Render search text
-        std::string displayText = searchQuery.empty() ? "Search..." : searchQuery;
+        if (searchActive) {
+            Uint32 currentTime = SDL_GetTicks();
+            if (currentTime - lastBlinkTime >= blinkInterval) {
+                showCaret = !showCaret;
+                lastBlinkTime = currentTime;
+            }
+        } else {
+            showCaret = false;
+        }
+        std::string displayText;
+        if (!searchActive && searchQuery.empty()) {
+            displayText = "Search...";
+        } else if (searchActive && searchQuery.empty()) {
+            displayText = " ";  // Force rendering a minimal surface for caret alignment
+        } else {
+            displayText = searchQuery;
+        }
         SDL_Color textColor = { 255, 255, 255, 255 };
         SDL_Surface* searchSurf = TTF_RenderText_Blended(font, displayText.c_str(), textColor);
-        SDL_Texture* searchTex = SDL_CreateTextureFromSurface(renderer, searchSurf);
-        SDL_Rect textRect = {
-            searchBarRect.x + 10,
-            searchBarRect.y + (searchBarRect.h - searchSurf->h) / 2,
-            searchSurf->w,
-            searchSurf->h
-        };
-        SDL_RenderCopy(renderer, searchTex, nullptr, &textRect);
-        SDL_FreeSurface(searchSurf);
-        SDL_DestroyTexture(searchTex);
+        if (searchSurf) {
+            SDL_Texture* searchTex = SDL_CreateTextureFromSurface(renderer, searchSurf);
+            SDL_Rect textRect = {
+                searchBarRect.x + 10,
+                searchBarRect.y + (searchBarRect.h - searchSurf->h) / 2,
+                searchSurf->w,
+                searchSurf->h
+            };
+            SDL_RenderCopy(renderer, searchTex, nullptr, &textRect);
 
+            if (searchActive && showCaret) {
+                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+                SDL_Rect caretRect = {
+                    textRect.x + textRect.w + 2,
+                    textRect.y,
+                    2,
+                    textRect.h
+                };
+                SDL_RenderFillRect(renderer, &caretRect);
+            }
 
-        // Draw "Services" label
-        SDL_Surface* labelSurf = TTF_RenderText_Blended(font, "Services", { 255, 255, 255, 255 });
-        SDL_Texture* labelTex = SDL_CreateTextureFromSurface(renderer, labelSurf);
-        SDL_Rect labelRect = { xStart + buttonWidth + 20, yStart, labelSurf->w, labelSurf->h };
-        SDL_RenderCopy(renderer, labelTex, nullptr, &labelRect);
-        SDL_FreeSurface(labelSurf);
-        SDL_DestroyTexture(labelTex);
+            SDL_FreeSurface(searchSurf);
+            SDL_DestroyTexture(searchTex);
+        }
+
 
         // Draw Add Service Button
         SDL_SetRenderDrawColor(renderer, 34, 139, 34, 255);
