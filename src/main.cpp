@@ -4,7 +4,7 @@
 //TODO: make this available for linux (?)
 //TODO: make a better visuals altogether :D
 //TODO: кнопка delete слишком вырежена, мб перенести в главный экран и сделать крестик
-//TODO: make it so user can rearange services/accounts however they want
+//TODO: make it so user can rearange services/accounts however they want (make a gray button to the left of each service button to let user rearenche the service)
 //TODO: to make a better code, mb instead of updating variables every loop, while not update them only when changes are made
 //TODO: сделать словарь (структуру словарь), в котором будут хранится слова для кнопок на разных языках
 //TODO: создать настройки, в которых можно будет настроить языки
