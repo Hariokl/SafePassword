@@ -1164,6 +1164,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     SDL_StopTextInput();
 
     TTF_CloseFont(font16);
+    TTF_CloseFont(font32);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     TTF_Quit();
